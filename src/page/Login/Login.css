@@ -1,0 +1,82 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: rgb(168, 168, 168);
+  font-family: "Roboto", sans-serif;
+}
+
+h4 {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.5rem; /* Ajuste o tamanho conforme necessário */
+  font-weight: 500; /* Peso da fonte médio */
+  margin-bottom: 20px; /* Adiciona espaço abaixo do título */
+  text-align: center;
+}
+
+.login-content-left {
+  width: 100%;
+  max-width: 400px; 
+  box-shadow: rgba(232, 233, 235, 0.4) 5px 5px, rgba(48, 48, 48, 0.3) 10px 10px, rgba(15, 15, 15, 0.2) 15px 15px, rgba(95, 94, 95, 0.1) 20px 20px, rgba(0, 0, 0, 0.05) 25px 25px;
+}
+
+
+.login-form {
+  background-color: white;
+  padding: 60px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  display: block;
+  margin: 0 auto 20px; /* Centraliza a imagem na horizontal e adiciona espaço na parte inferior */
+}
+
+.welcome-message{
+  font-size: 0.8rem; /* Ajuste o tamanho conforme necessário */
+  font-weight: 500; /* Peso da fonte médio */
+  text-align: center;
+}
+
+.login-form h2 {
+  margin-bottom: 20px;
+}
+
+.login-form div {
+  margin-bottom: 2px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.login-form button {
+  width: 100%;
+  padding: 10px;
+  background-color: #262626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-form button:hover {
+  background-color: #0c0c0c;
+}
+
+.text-left{
+  background-color: #0c0c0c;
+  width: 400px;
+  height: 40vh;
+}
