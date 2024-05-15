@@ -2,7 +2,6 @@ import axios from "axios";
 
 const API_URL = "http://localhost:8080/auth/";
 
-
 class AuthService {
   login(username, password) {
     return axios
@@ -14,7 +13,7 @@ class AuthService {
         if (response.data.accessToken) {
           localStorage.setItem(
             "usergamesporgamers",
-            JSON.stringify(response.data)
+            JSON.stringify(response.data.accessToken)
           );
         }
         return response.data;

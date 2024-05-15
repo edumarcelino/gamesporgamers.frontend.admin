@@ -14,10 +14,13 @@ import MySidebar from "../../components/global/MySidebar/MySidebar";
 import { CheckBox, Send } from "@mui/icons-material";
 
 import axios from "axios";
+import AuthService from "../../services/AuthService";
 
 const AddPost = () => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [text, setText] = useState("");
-  const [destaque, setDestaque] = useState(false); // Estado para controlar o destaque
+  const [destaque, setDestaque] = useState(false);
   const [badges, setBadges] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
@@ -39,6 +42,49 @@ const AddPost = () => {
       );
     } else {
       setSelectedCategories([...selectedCategories, badgeName]);
+    }
+  };
+
+  const cadastrar = async () => {
+    try {
+      // Recuperar o token de acesso do localStorage
+      const accessToken = AuthService.getCurrentUser();
+
+      // Verificar se o token de acesso existe
+      if (!accessToken) {
+        console.error("Token de acesso não encontrado.");
+        return;
+      }
+
+      // Configurar o cabeçalho da solicitação HTTP com o token de acesso
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json", // Defina o tipo de conteúdo como JSON
+      };
+
+      const response = await axios.post(
+        "http://localhost:8080/api/v1/restrict/posts",
+        {
+          title: title,
+          description: description,
+          posttext: text,
+          postTextHTML: text,
+          datePost: new Date(),
+          highlighted: destaque,
+          urlMainImage: text,
+          badges: selectedCategories,
+        },
+        { headers: headers } // Passar o cabeçalho na configuração da solicitação
+      );
+      console.log("Post cadastrado com sucesso:", response.data);
+      // Limpar os campos após o cadastro
+      setTitle("");
+      setDescription("");
+      setText("");
+      setDestaque(false);
+      setSelectedCategories([]);
+    } catch (error) {
+      console.error("Erro ao cadastrar post:", error);
     }
   };
 
@@ -118,6 +164,8 @@ const AddPost = () => {
             id="outlined-controlled"
             label="Título"
             name="title"
+            value={title} // Vincula o valor do campo de entrada ao estado 'title'
+            onChange={(e) => setTitle(e.target.value)} // Atualiza o estado 'title' quando o campo de entrada muda
             sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
           />
           <TextField
@@ -125,6 +173,8 @@ const AddPost = () => {
             id="outlined-controlled"
             label="Descrição"
             name="description"
+            value={description} // Vincula o valor do campo de entrada ao estado 'description'
+            onChange={(e) => setDescription(e.target.value)} // Atualiza o estado 'description' quando o campo de entrada muda
             sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
           />
         </Box>
@@ -144,7 +194,12 @@ const AddPost = () => {
           />
         </Box>
         <Box style={{ mt: 5 }}>
-          <Button variant="contained" endIcon={<Send />} sx={{ mt: 8 }}>
+          <Button
+            variant="contained"
+            endIcon={<Send />}
+            onClick={cadastrar}
+            sx={{ mt: 8 }}
+          >
             Cadastrar
           </Button>
         </Box>

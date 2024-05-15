@@ -40,7 +40,7 @@ const MySidebar = (props) => {
 
   const handlePageIndex = async () => {
     // Redireciona para a página de adicao de Post
-    navigate("/addpost");
+    navigate("/index");
   };
 
   return (
