@@ -5,43 +5,57 @@ import Header from "../../components/global/Header/Header";
 import {
   Box,
   Button,
+  Checkbox,
   FormControlLabel,
   FormGroup,
   TextField,
   Typography,
 } from "@mui/material";
 import MySidebar from "../../components/global/MySidebar/MySidebar";
-import { CheckBox, Send } from "@mui/icons-material";
+import { Send } from "@mui/icons-material";
 
 import axios from "axios";
+
 import AuthService from "../../services/AuthService";
 
 const AddPost = () => {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [checked, setChecked] = useState(false);
   const [text, setText] = useState("");
-  const [destaque, setDestaque] = useState(false);
+  const [description, setDescription] = useState("");
   const [badges, setBadges] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+  };
 
   const handleTextChange = (value) => {
     setText(value);
   };
 
-  const handleDestaqueChange = (event) => {
-    setDestaque(event.target.checked);
+  const handleTitleChange = (event) => {
+    setTitle(event.target.value);
   };
 
-  const handleCategorySelect = (badgeName) => {
+  const handleDescriptionChange = (event) => {
+    setDescription(event.target.value);
+  };
+
+  const handleCategorySelect = (badge) => {
     // Verifica se a categoria já está selecionada
-    const isSelected = selectedCategories.includes(badgeName);
+    const isSelected = selectedCategories.some(
+      (selectedBadge) => selectedBadge.id === badge.id
+    );
     // Atualiza as categorias selecionadas
     if (isSelected) {
       setSelectedCategories(
-        selectedCategories.filter((category) => category !== badgeName)
+        selectedCategories.filter(
+          (selectedBadge) => selectedBadge.id !== badge.id
+        )
       );
     } else {
-      setSelectedCategories([...selectedCategories, badgeName]);
+      setSelectedCategories([...selectedCategories, badge]);
     }
   };
 
@@ -67,10 +81,9 @@ const AddPost = () => {
         {
           title: title,
           description: description,
-          posttext: text,
           postTextHTML: text,
           datePost: new Date(),
-          highlighted: destaque,
+          highlighted: checked,
           urlMainImage: text,
           badges: selectedCategories,
         },
@@ -81,7 +94,7 @@ const AddPost = () => {
       setTitle("");
       setDescription("");
       setText("");
-      setDestaque(false);
+      setChecked(false);
       setSelectedCategories([]);
     } catch (error) {
       console.error("Erro ao cadastrar post:", error);
@@ -116,18 +129,19 @@ const AddPost = () => {
           subtitle="Criar uma nova postagem no Portal"
         />
         <Box mt={2}>
-          <FormGroup>
+          <FormGroup aria-label="position" row>
             <FormControlLabel
               control={
-                <CheckBox
-                  checked={destaque}
-                  onChange={handleDestaqueChange}
+                <Checkbox
+                  checked={checked}
+                  onChange={handleChange}
                   name="destaque"
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 0 }}
                 />
               }
               label="Artigo em Destaque"
-              style={{ alignItems: "flex-start", marginLeft: "2px" }} // Adiciona margem à esquerda
+              labelPlacement="end"
+              style={{ marginLeft: "2px" }}
             />
           </FormGroup>
 
@@ -142,18 +156,22 @@ const AddPost = () => {
             <Button
               key={badge.id}
               variant={
-                selectedCategories.includes(badge.name)
+                selectedCategories.some(
+                  (selectedBadge) => selectedBadge.id === badge.id
+                )
                   ? "contained"
                   : "outlined"
               }
               sx={{
                 mr: 2,
                 mb: 2,
-                color: selectedCategories.includes(badge.name)
+                color: selectedCategories.some(
+                  (selectedBadge) => selectedBadge.id === badge.id
+                )
                   ? "white"
                   : "grey",
               }}
-              onClick={() => handleCategorySelect(badge.name)}
+              onClick={() => handleCategorySelect(badge)}
             >
               {badge.name}
             </Button>
@@ -165,7 +183,7 @@ const AddPost = () => {
             label="Título"
             name="title"
             value={title} // Vincula o valor do campo de entrada ao estado 'title'
-            onChange={(e) => setTitle(e.target.value)} // Atualiza o estado 'title' quando o campo de entrada muda
+            onChange={handleTitleChange} // Atualiza o estado 'title' quando o campo de entrada muda
             sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
           />
           <TextField
@@ -174,7 +192,7 @@ const AddPost = () => {
             label="Descrição"
             name="description"
             value={description} // Vincula o valor do campo de entrada ao estado 'description'
-            onChange={(e) => setDescription(e.target.value)} // Atualiza o estado 'description' quando o campo de entrada muda
+            onChange={handleDescriptionChange} // Atualiza o estado 'description' quando o campo de entrada muda
             sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
           />
         </Box>

@@ -9,7 +9,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import ptBRGrid from "../../components/locales/ptBRGrid";
-import { Add, DeleteRounded, Edit, Send } from "@mui/icons-material";
+import { Add, DeleteRounded, Edit } from "@mui/icons-material";
 
 const ListPost = () => {
   const [posts, setPosts] = useState([]);
