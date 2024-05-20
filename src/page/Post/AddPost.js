@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import Header from "../../components/global/Header/Header";
@@ -10,21 +10,28 @@ import {
   FormGroup,
   TextField,
   Typography,
+  Snackbar,
 } from "@mui/material";
 import MySidebar from "../../components/global/MySidebar/MySidebar";
 import { Send } from "@mui/icons-material";
-
 import axios from "axios";
-
 import AuthService from "../../services/AuthService";
+import { useDropzone } from "react-dropzone";
+import Cropper from "react-cropper";
+import "cropperjs/dist/cropper.css";
 
 const AddPost = () => {
   const [title, setTitle] = useState("");
-  const [checked, setChecked] = useState(false);
+  const [checked, setChecked] = useState(true);
   const [text, setText] = useState("");
   const [description, setDescription] = useState("");
   const [badges, setBadges] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [image, setImage] = useState(null);
+  const [croppedImage, setCroppedImage] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const cropperRef = useRef(null);
 
   const handleChange = (event) => {
     setChecked(event.target.checked);
@@ -43,11 +50,9 @@ const AddPost = () => {
   };
 
   const handleCategorySelect = (badge) => {
-    // Verifica se a categoria já está selecionada
     const isSelected = selectedCategories.some(
       (selectedBadge) => selectedBadge.id === badge.id
     );
-    // Atualiza as categorias selecionadas
     if (isSelected) {
       setSelectedCategories(
         selectedCategories.filter(
@@ -59,22 +64,92 @@ const AddPost = () => {
     }
   };
 
-  const cadastrar = async () => {
-    try {
-      // Recuperar o token de acesso do localStorage
-      const accessToken = AuthService.getCurrentUser();
+  const onDrop = (acceptedFiles) => {
+    setImage(URL.createObjectURL(acceptedFiles[0]));
+  };
 
-      // Verificar se o token de acesso existe
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: "image/*",
+  });
+
+  const getCroppedImage = () => {
+    const cropper = cropperRef.current.cropper;
+    const base64Image = cropper.getCroppedCanvas().toDataURL();
+
+    // Função para converter Base64 para Blob
+    const base64ToBlob = (base64, mimeType) => {
+      const byteString = atob(base64.split(",")[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new Blob([ab], { type: mimeType });
+    };
+
+    const mimeType = base64Image.split(",")[0].split(":")[1].split(";")[0]; // Ex: "image/png"
+    const blob = base64ToBlob(base64Image, mimeType);
+
+    console.log("Blob criado:", blob); // Log do Blob criado
+
+    return blob; // Retorna o Blob diretamente
+  };
+
+  const uploadImage = async () => {
+    try {
+      const accessToken = AuthService.getCurrentUser();
       if (!accessToken) {
         console.error("Token de acesso não encontrado.");
         return;
       }
 
-      // Configurar o cabeçalho da solicitação HTTP com o token de acesso
       const headers = {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json", // Defina o tipo de conteúdo como JSON
+        'Content-Type': 'multipart/form-data' // Certifique-se de incluir este cabeçalho
+    };
+
+      const blob = getCroppedImage(); // Chama a função que retorna o Blob
+
+      if (!blob) {
+        console.error("Blob não foi criado corretamente.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', blob);
+      //formData.append("fileContent", blob, "croppedImage.png");
+      formData.append("fileName", "croppedImage.png");
+
+      console.log("FormData:", formData.get("fileContent")); // Log do FormData para verificar se o Blob foi anexado
+
+      const response = await axios.post(
+        "http://localhost:8080/api/v1/restrict/upload",
+        formData,
+        { headers }
+      );
+
+      return response.data.url;
+    } catch (error) {
+      console.error("Erro ao enviar imagem:", error);
+      throw error;
+    }
+  };
+
+  const cadastrar = async () => {
+    try {
+      const accessToken = AuthService.getCurrentUser();
+      if (!accessToken) {
+        console.error("Token de acesso não encontrado.");
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       };
+
+      const imageUrl = await uploadImage();
 
       const response = await axios.post(
         "http://localhost:8080/api/v1/restrict/posts",
@@ -84,20 +159,25 @@ const AddPost = () => {
           postTextHTML: text,
           datePost: new Date(),
           highlighted: checked,
-          urlMainImage: text,
+          urlMainImage: imageUrl,
           badges: selectedCategories,
         },
-        { headers: headers } // Passar o cabeçalho na configuração da solicitação
+        { headers }
       );
-      console.log("Post cadastrado com sucesso:", response.data);
-      // Limpar os campos após o cadastro
+
+      setSnackbarMessage("Post cadastrado com sucesso!");
+      setSnackbarOpen(true);
       setTitle("");
       setDescription("");
       setText("");
       setChecked(false);
       setSelectedCategories([]);
+      setImage(null);
+      setCroppedImage("");
     } catch (error) {
       console.error("Erro ao cadastrar post:", error);
+      setSnackbarMessage("Erro ao cadastrar post.");
+      setSnackbarOpen(true);
     }
   };
 
@@ -114,15 +194,19 @@ const AddPost = () => {
     fetchBadges();
   }, []);
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       <MySidebar />
       <Box
         m="20px"
         height="100%"
-        flexGrow={1} // Permite que o Box ocupe o espaço restante
-        display="flex" // Usa flexbox
-        flexDirection="column" // Empilha os itens verticalmente
+        flexGrow={1}
+        display="flex"
+        flexDirection="column"
       >
         <Header
           title="Criar uma Postagem"
@@ -181,45 +265,71 @@ const AddPost = () => {
             fullWidth
             id="outlined-controlled"
             label="Título"
-            name="title"
-            value={title} // Vincula o valor do campo de entrada ao estado 'title'
-            onChange={handleTitleChange} // Atualiza o estado 'title' quando o campo de entrada muda
-            sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
+            value={title}
+            onChange={handleTitleChange}
+            sx={{ mb: 2 }}
           />
+
           <TextField
             fullWidth
             id="outlined-controlled"
             label="Descrição"
-            name="description"
-            value={description} // Vincula o valor do campo de entrada ao estado 'description'
-            onChange={handleDescriptionChange} // Atualiza o estado 'description' quando o campo de entrada muda
-            sx={{ width: "100%", mb: 2 }} // Largura total e margem inferior
+            value={description}
+            onChange={handleDescriptionChange}
+            sx={{ mb: 2 }}
           />
-        </Box>
-        <Box>
-          <Typography
-            variant="subtitle1"
-            component="subtitle1"
-            sx={{ display: "block", mb: 1 }}
-          >
-            Texto do Artigo
-          </Typography>
+
           <ReactQuill
+            theme="snow"
             value={text}
             onChange={handleTextChange}
-            placeholder="Digite o texto do artigo"
-            style={{ width: "100%", height: "400px", mb: 2 }} // Ocupa todo o espaço disponível
+            style={{ height: "300px", marginBottom: "50px" }}
           />
-        </Box>
-        <Box style={{ mt: 5 }}>
+
+          <div
+            {...getRootProps()}
+            style={{
+              border: "2px dashed gray",
+              padding: "20px",
+              textAlign: "center",
+            }}
+          >
+            <input {...getInputProps()} />
+            <p>
+              Arraste e solte uma imagem ou clique para selecionar uma imagem
+            </p>
+          </div>
+
+          {image && (
+            <Cropper
+              src={image}
+              style={{ height: 400, width: "100%" }}
+              // Cropper.js options
+              initialAspectRatio={16 / 9}
+              guides={false}
+              ref={cropperRef}
+            />
+          )}
+
           <Button
             variant="contained"
-            endIcon={<Send />}
-            onClick={cadastrar}
-            sx={{ mt: 8 }}
+            color="primary"
+            startIcon={<Send />}
+            onClick={() => {
+              getCroppedImage();
+              cadastrar();
+            }}
+            sx={{ mt: 2 }}
           >
             Cadastrar
           </Button>
+
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={6000}
+            onClose={handleSnackbarClose}
+            message={snackbarMessage}
+          />
         </Box>
       </Box>
     </div>
