@@ -28,7 +28,6 @@ const AddPost = () => {
   const [badges, setBadges] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [image, setImage] = useState(null);
-  const [croppedImage, setCroppedImage] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const cropperRef = useRef(null);
@@ -106,10 +105,10 @@ const AddPost = () => {
 
       const headers = {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'multipart/form-data' // Certifique-se de incluir este cabeçalho
-    };
+        "Content-Type": "multipart/form-data",
+      };
 
-      const blob = getCroppedImage(); // Chama a função que retorna o Blob
+      const blob = getCroppedImage();
 
       if (!blob) {
         console.error("Blob não foi criado corretamente.");
@@ -117,11 +116,8 @@ const AddPost = () => {
       }
 
       const formData = new FormData();
-      formData.append('file', blob);
-      //formData.append("fileContent", blob, "croppedImage.png");
+      formData.append("file", blob);
       formData.append("fileName", "croppedImage.png");
-
-      console.log("FormData:", formData.get("fileContent")); // Log do FormData para verificar se o Blob foi anexado
 
       const response = await axios.post(
         "http://localhost:8080/api/v1/restrict/upload",
@@ -129,7 +125,7 @@ const AddPost = () => {
         { headers }
       );
 
-      return response.data.url;
+      return response.data; // Retorne diretamente a resposta completa
     } catch (error) {
       console.error("Erro ao enviar imagem:", error);
       throw error;
@@ -149,8 +145,15 @@ const AddPost = () => {
         "Content-Type": "application/json",
       };
 
-      const imageUrl = await uploadImage();
+      const imageUrlData = await uploadImage(); // Recebe a resposta completa do upload
 
+
+      if (!imageUrlData || !imageUrlData.url) {
+        console.error("URL da imagem não recebida.");
+        return;
+      }
+
+      const imageUrl = imageUrlData.url;
       const response = await axios.post(
         "http://localhost:8080/api/v1/restrict/posts",
         {
@@ -173,7 +176,6 @@ const AddPost = () => {
       setChecked(false);
       setSelectedCategories([]);
       setImage(null);
-      setCroppedImage("");
     } catch (error) {
       console.error("Erro ao cadastrar post:", error);
       setSnackbarMessage("Erro ao cadastrar post.");
